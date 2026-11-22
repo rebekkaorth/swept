@@ -63,6 +63,27 @@ Bugs and ideas: [open an issue](https://github.com/rebekkaorth/Swept/issues).
 If Swept deleted, or offered to delete, something it shouldn't, please report it privately:
 see [SECURITY.md](SECURITY.md).
 
+## Privacy
+
+Everything Swept does happens on your Mac.
+
+- **No data leaves your Mac.** Swept makes no network connections: no servers, no account,
+  no analytics, no crash reports, no update checks.
+- **Nothing is collected.** I don't receive any information about you, your Mac or your files.
+- **Your settings stay local.** Your limit, reminder time and last scan results are saved only
+  in `~/Library/Preferences/com.rebekkaorth.Swept.plist` on your Mac.
+- **Full Disk Access is used only on your Mac,** to measure folders and to move the items you
+  choose to the Trash.
+
+Downloading Swept from GitHub is covered by
+[GitHub's privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
+
+## Use at your own risk
+
+Swept is free, open-source software provided "as is", without warranty of any kind (see the
+[license](LICENSE)). It only touches known cache and leftover folders and moves items to the
+Trash first, but please review what you clean. You're responsible for the files on your Mac.
+
 ## License
 
 [MIT](LICENSE) © 2026 rebekkaorth
