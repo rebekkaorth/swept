@@ -11,11 +11,11 @@ struct MainSplitView: View {
     let model: ScanModel
     var onScanAgain: () -> Void = {}
     /// Non-nil only when background monitoring is off — shows the "turn it on" affordance.
-    var onTurnOnMonitoring: (() -> Void)? = nil
+    var onSetUpReminders: (() -> Void)? = nil
 
     var body: some View {
         NavigationSplitView {
-            SidebarView(model: model, onScanAgain: onScanAgain, onTurnOnMonitoring: onTurnOnMonitoring)
+            SidebarView(model: model, onScanAgain: onScanAgain, onSetUpReminders: onSetUpReminders)
                 .navigationSplitViewColumnWidth(min: 240, ideal: 246, max: 300)
         } content: {
             ContentPaneView(model: model)

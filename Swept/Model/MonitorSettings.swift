@@ -2,7 +2,7 @@
 //  MonitorSettings.swift
 //  Swept
 //
-//  Settings for optional background monitoring. Persists to UserDefaults.
+//  Settings for the menu bar icon, background monitoring and reminders. Persists to UserDefaults.
 //  No networking. BackgroundMonitor owns the schedule; this holds settings + the last snapshot.
 //
 
@@ -26,13 +26,20 @@ final class MonitorSettings {
 
     // MARK: - Persisted settings
 
-    var isEnabled: Bool {
-        didSet {
-            guard isEnabled != oldValue else { return } // ignore redundant writes (avoid needless login-item churn)
-            defaults.set(isEnabled, forKey: Key.isEnabled)
-            LoginItem.setEnabled(isEnabled) // launch-at-login tracks monitoring
-        }
+    /// Threshold reminders on/off (limit, how often and what time are set below).
+    /// Stored under the old "monitoring enabled" key, so existing setups keep their reminders.
+    var remindersEnabled: Bool {
+        didSet { defaults.set(remindersEnabled, forKey: Key.remindersEnabled) }
     }
+
+    /// Show the Swept icon in the menu bar. On by default.
+    var showInMenuBar: Bool {
+        didSet { defaults.set(showInMenuBar, forKey: Key.showInMenuBar) }
+    }
+
+    /// Whether Swept keeps measuring in the background (and keeps running after the window
+    /// closes): needed for the menu bar icon's numbers and for reminders.
+    var isMonitoring: Bool { showInMenuBar || remindersEnabled }
 
     /// Transient: true while a background measurement pass is running (drives the menu-bar
     /// "scanning" animation). Not persisted.
@@ -69,6 +76,21 @@ final class MonitorSettings {
         didSet { defaults.set(Int(thresholdBytes), forKey: Key.thresholdBytes) }
     }
 
+    /// Time of day for the daily reminder, in minutes after midnight (local time). Default 10:00.
+    var reminderMinutes: Int {
+        didSet { defaults.set(reminderMinutes, forKey: Key.reminderMinutes) }
+    }
+
+    /// How many days between reminders while over the limit (1 = daily, 3, or 7). Default daily.
+    var reminderIntervalDays: Int {
+        didSet { defaults.set(reminderIntervalDays, forKey: Key.reminderIntervalDays) }
+    }
+
+    /// Reminder frequency choices offered in the UI.
+    static let reminderIntervalOptions: [(days: Int, label: String)] = [
+        (1, "Daily"), (3, "Every 3 days"), (7, "Weekly"),
+    ]
+
     /// Suppress notifications until this date (user chose "snooze").
     var snoozedUntil: Date? {
         didSet { setDate(snoozedUntil, forKey: Key.snoozedUntil) }
@@ -95,12 +117,19 @@ final class MonitorSettings {
     }
 
     @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let calendar: Calendar
 
     // MARK: - Init
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, calendar: Calendar = .current) {
         self.defaults = defaults
-        self.isEnabled = defaults.bool(forKey: Key.isEnabled) // default false
+        self.calendar = calendar
+        self.reminderMinutes = (defaults.object(forKey: Key.reminderMinutes) as? Int)
+            .map { min(max($0, 0), 24 * 60 - 1) } ?? Self.defaultReminderMinutes
+        self.reminderIntervalDays = (defaults.object(forKey: Key.reminderIntervalDays) as? Int)
+            .map { min(max($0, 1), 30) } ?? 1
+        self.remindersEnabled = defaults.bool(forKey: Key.remindersEnabled) // default off
+        self.showInMenuBar = defaults.object(forKey: Key.showInMenuBar) as? Bool ?? true
         self.thresholdBytes = (defaults.object(forKey: Key.thresholdBytes) as? Int).map(Int64.init)
             ?? 25_000_000_000
         self.snoozedUntil = defaults.object(forKey: Key.snoozedUntil) as? Date
@@ -134,25 +163,65 @@ final class MonitorSettings {
         return now < snoozedUntil
     }
 
-    /// Minimum gap between threshold notifications: one reminder per day while the
-    /// reclaimable amount stays over the threshold. (Snooze suppresses them for a week.)
-    private static let notifyCooldown: TimeInterval = 24 * 60 * 60 // 1 day
+    /// Default daily reminder time: 10:00.
+    static let defaultReminderMinutes = 10 * 60
 
-    /// Decides whether a threshold notification is due for the latest snapshot. Clears
-    /// `lastNotified` whenever we're below the threshold, so a fresh crossing can notify
-    /// immediately (no cooldown wait). Call `markNotified(at:)` once one was actually delivered.
+    /// Two reminders are never closer than this: if the next reminder time falls sooner after
+    /// the previous one (e.g. you first passed the limit at 23:00), it moves to the day after.
+    static let minimumReminderGap: TimeInterval = 12 * 60 * 60
+
+    /// The most recent moment the reminder time of day was reached, at or before `date`.
+    func latestReminderTime(atOrBefore date: Date) -> Date {
+        let today = reminderTime(onDayOf: date)
+        return today <= date ? today : reminderTime(onDayOf: calendar.date(byAdding: .day, value: -1, to: date)!)
+    }
+
+    /// When the reminder after one sent at `last` is due: `reminderIntervalDays` after the
+    /// reminder time that `last` belonged to, at the reminder time of day. Anchoring on the
+    /// scheduled time (not on when it actually went out) keeps a late reminder (Mac asleep)
+    /// from pushing every later one back.
+    func reminderDue(after last: Date) -> Date {
+        let slot = latestReminderTime(atOrBefore: last)
+        var due = reminderTime(onDayOf: calendar.date(byAdding: .day, value: reminderIntervalDays, to: slot)!)
+        while due.timeIntervalSince(last) < Self.minimumReminderGap {
+            due = reminderTime(onDayOf: calendar.date(byAdding: .day, value: 1, to: due)!)
+        }
+        return due
+    }
+
+    /// When the next reminder can arrive, if Swept is still over the limit then.
+    /// `nil` when none has been sent yet (the first crossing notifies right away).
+    func nextReminderDate(now: Date) -> Date? {
+        guard let last = lastNotified else { return nil }
+        let due = reminderDue(after: last)
+        if let snoozedUntil, snoozedUntil > due { return snoozedUntil }
+        return due
+    }
+
+    private func reminderTime(onDayOf date: Date) -> Date {
+        let start = calendar.startOfDay(for: date)
+        return calendar.date(bySettingHour: reminderMinutes / 60, minute: reminderMinutes % 60,
+                             second: 0, of: start) ?? start
+    }
+
+    /// Decides whether a threshold notification is due for the latest snapshot:
+    /// - the first time reclaimable is over the limit, right away;
+    /// - after that, every `reminderIntervalDays` days at the reminder time of day (or at the
+    ///   first check after it, if the Mac was asleep). See `reminderDue(after:)`.
+    /// Clears `lastNotified` whenever we're below the threshold, so a fresh crossing notifies
+    /// immediately again. Call `markNotified(at:)` once one was actually delivered.
     func shouldNotifyForThreshold(now: Date) -> Bool {
-        guard isEnabled else { return false }
+        guard remindersEnabled else { return false }
         guard lastReclaimableBytes >= thresholdBytes else {
             lastNotified = nil // below threshold → reset the cap
             return false
         }
         guard !isSnoozed(now: now) else { return false }
-        if let last = lastNotified, now.timeIntervalSince(last) < Self.notifyCooldown { return false }
-        return true
+        guard let last = lastNotified else { return true }
+        return now >= reminderDue(after: last)
     }
 
-    /// Starts the one-day cooldown. Only call after macOS accepted the notification.
+    /// Starts the wait for the next reminder. Only call after macOS accepted the notification.
     func markNotified(at date: Date) { lastNotified = date }
 
     /// Called when the user cleans in the main app: if reclaimable has dropped below the
@@ -174,8 +243,11 @@ final class MonitorSettings {
     }
 
     private enum Key {
-        static let isEnabled = "monitor.isEnabled"
+        static let remindersEnabled = "monitor.isEnabled" // pre-split key: monitoring + reminders
+        static let showInMenuBar = "menuBar.show"
         static let thresholdBytes = "monitor.thresholdBytes"
+        static let reminderMinutes = "monitor.reminderMinutes"
+        static let reminderIntervalDays = "monitor.reminderIntervalDays"
         static let snoozedUntil = "monitor.snoozedUntil"
         static let lastNotified = "monitor.lastNotified"
         static let lastCheck = "monitor.lastCheck"

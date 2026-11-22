@@ -69,18 +69,17 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.delegate = self
     }
 
-    // MARK: - Presence (follows monitoring on/off)
+    // MARK: - Presence (follows the menu bar / reminders settings)
 
     private func syncPresence() {
-        if monitor.isEnabled {
-            guard statusItem == nil else { return }
-            installStatusItem()
-            backgroundMonitor.start()
-        } else {
-            guard statusItem != nil else { return }
+        // Icon follows "Show in menu bar"; background checks run for the icon OR reminders.
+        if monitor.showInMenuBar {
+            if statusItem == nil { installStatusItem() }
+        } else if statusItem != nil {
+            popover.performClose(nil)
             removeStatusItem()
-            backgroundMonitor.stop()
         }
+        if monitor.isMonitoring { backgroundMonitor.start() } else { backgroundMonitor.stop() }
     }
 
     private func installStatusItem() {
@@ -145,7 +144,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func trackEnabled() {
         _ = withObservationTracking {
-            monitor.isEnabled
+            (monitor.showInMenuBar, monitor.remindersEnabled)
         } onChange: { [weak self] in
             Task { @MainActor in
                 self?.syncPresence()

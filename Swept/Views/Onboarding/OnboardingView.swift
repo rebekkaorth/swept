@@ -21,11 +21,11 @@ struct OnboardingView: View {
                 .interpolation(.high)
                 .frame(width: 82, height: 82)
 
-            Text("Welcome to Swept")
+            Text("One more step: Full Disk Access")
                 .font(Typography.titleXL)
                 .foregroundStyle(Theme.textPrimary)
 
-            Text("Swept finds leftover caches and data that other apps have piled up. To see them, macOS needs you to give Swept Full Disk Access.")
+            Text("To see the caches and data other apps have piled up, macOS needs you to give Swept Full Disk Access. Your first scan starts as soon as it's on.")
                 .font(.system(size: 16))
                 .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)

@@ -10,7 +10,7 @@ import SwiftUI
 struct SidebarView: View {
     @Bindable var model: ScanModel
     var onScanAgain: () -> Void = {}
-    var onTurnOnMonitoring: (() -> Void)? = nil
+    var onSetUpReminders: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,11 +48,11 @@ struct SidebarView: View {
                 .controlSize(.large)
                 .keyboardShortcut("r", modifiers: .command) // ⌘R re-scan
 
-                if let onTurnOnMonitoring {
+                if let onSetUpReminders {
                     Button {
-                        onTurnOnMonitoring()
+                        onSetUpReminders()
                     } label: {
-                        Label("Turn on background monitoring", systemImage: "menubar.rectangle")
+                        Label("Set up reminders", systemImage: "bell")
                             .font(.system(size: 12))
                             .frame(maxWidth: .infinity)
                     }

@@ -2,10 +2,13 @@
 //  BackgroundMonitor.swift
 //  Swept
 //
-//  Owns the cadence for the low-impact, sizes-only background scan that powers the
-//  menu-bar monitor. Runs once when the menu bar extra appears, then every 6 hours via
+//  Owns the cadence for the menu-bar monitor. Wakes about once an hour via
 //  NSBackgroundActivityScheduler (App Nap–aware, unlike a plain Timer in a menu-bar-only
-//  app), recomputing after the machine wakes from sleep. Read-only — it never deletes.
+//  app) and after the Mac wakes from sleep. Each wake:
+//    1. runs the low-impact, sizes-only scan if the last measurement is 6+ hours old;
+//    2. checks whether a reminder is due (limit reached, reminder time passed, not snoozed).
+//  Checking hourly is what lets the reminder arrive close to the chosen time of day, while
+//  the disk is only measured every 6 hours. Read-only — it never deletes.
 //
 
 import Foundation
@@ -24,44 +27,43 @@ final class BackgroundMonitor {
     @ObservationIgnored private var wakeObserver: NSObjectProtocol?
     @ObservationIgnored private var isRunning = false
 
-    private let interval: TimeInterval = 6 * 60 * 60 // 6 hours
-    private let minimumGap: TimeInterval = 60 * 60    // never more often than hourly
+    private let checkInterval: TimeInterval = 60 * 60     // wake up hourly to check the reminder
+    private let scanInterval: TimeInterval = 6 * 60 * 60  // re-measure the disk every 6 hours
+    /// A reminder is only sent from a reasonably fresh measurement.
+    private let maxSnapshotAge: TimeInterval = 7 * 60 * 60
 
     init(settings: MonitorSettings, scanner: Scanning = FileSystemScanner()) {
         self.settings = settings
         self.scanner = scanner
     }
 
-    // MARK: - Lifecycle (tied to the menu bar extra being present)
+    // MARK: - Lifecycle (runs while the menu bar icon or reminders are on)
 
     func start() {
         guard !isRunning else { return }
         isRunning = true
 
-        // A scan on launch of the menu bar extra.
-        Task { await tick(force: true) }
+        // A scan when monitoring starts (launch, login, or switching it on).
+        Task { await tick(forceScan: true) }
 
-        // Every 6 hours, with generous tolerance (low priority — timing isn't precise).
-        // The system picks a good moment and keeps it from being starved by App Nap.
         let scheduler = NSBackgroundActivityScheduler(identifier: "com.rebekkaorth.Swept.monitor")
         scheduler.repeats = true
-        scheduler.interval = interval
-        scheduler.tolerance = 30 * 60
+        scheduler.interval = checkInterval
+        scheduler.tolerance = 10 * 60
         scheduler.qualityOfService = .utility
         scheduler.schedule { [weak self] completion in
             Task {
-                await self?.tick(force: false)
+                await self?.tick(forceScan: false)
                 completion(.finished)
             }
         }
         self.scheduler = scheduler
 
-        // Tolerate sleep: re-evaluate on wake. `tick` enforces the 1-hour gap, so this is a
-        // no-op if we scanned recently and catches up if we slept through a scheduled run.
+        // Scheduled runs don't happen while the Mac sleeps: catch up on wake.
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            Task { await self?.tick(force: false) }
+            Task { await self?.tick(forceScan: false) }
         }
     }
 
@@ -75,34 +77,43 @@ final class BackgroundMonitor {
         wakeObserver = nil
     }
 
-    // MARK: - Scan tick
+    // MARK: - Tick
 
-    /// Runs a measurement when conditions allow. `force` bypasses ONLY the 1-hour gap (for the
-    /// launch scan); it never overrides the mid-scan or FDA guards. Snooze silences the
-    /// notification only — measuring continues so the popover stays current.
+    /// Measures if due, then sends the reminder if due. `forceScan` bypasses only the 6-hour
+    /// scan interval; the mid-scan and Full Disk Access guards always apply.
     @MainActor
-    private func tick(force: Bool) async {
-        guard settings.isEnabled else { return }
-        let now = Date()
+    private func tick(forceScan: Bool) async {
+        guard settings.isMonitoring else { return }
+        await scanIfDue(force: forceScan)
+        await remindIfDue()
+    }
+
+    @MainActor
+    private func scanIfDue(force: Bool) async {
         guard !settings.isFullScanRunning else { return } // defer to a full scan in the main app
         guard FullDiskAccess.isGranted() else { return }  // nothing to measure without FDA
-        if !force, let last = settings.lastCheck, now.timeIntervalSince(last) < minimumGap { return }
         guard !settings.isChecking else { return }        // already measuring
+        if !force, let last = settings.lastCheck, Date().timeIntervalSince(last) < scanInterval { return }
 
         settings.isChecking = true
         defer { settings.isChecking = false }
         do {
             let snapshot = try await scanner.sizesOnlyScan() // utility QoS, off the main thread
             settings.record(snapshot, at: Date())
-            // Threshold notification: over the limit, not snoozed, and >24h since the last one.
-            // The cooldown only starts once macOS accepted it, so a denied permission or a
-            // failed post doesn't silently swallow the day's reminder.
-            if settings.shouldNotifyForThreshold(now: Date()),
-               await MonitorNotifications.postThreshold(reclaimableBytes: settings.lastReclaimableBytes) {
-                settings.markNotified(at: Date())
-            }
         } catch {
             // Leave the previous snapshot in place.
+        }
+    }
+
+    /// Sends the reminder when it's due. The cooldown only starts once macOS accepted the
+    /// notification, so a denied permission or a failed post doesn't silently use it up.
+    @MainActor
+    private func remindIfDue() async {
+        guard let lastCheck = settings.lastCheck,
+              Date().timeIntervalSince(lastCheck) < maxSnapshotAge else { return }
+        guard settings.shouldNotifyForThreshold(now: Date()) else { return }
+        if await MonitorNotifications.postThreshold(reclaimableBytes: settings.lastReclaimableBytes) {
+            settings.markNotified(at: Date())
         }
     }
 }

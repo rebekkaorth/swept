@@ -15,9 +15,11 @@ struct ContentView: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(MonitorSettings.self) private var monitor
     @AppStorage("hasSeenMonitoringSetup") private var hasSeenMonitoringSetup = false
+    /// Set once the user pressed "Scan My Mac" on the welcome screen. Until then, nothing scans.
+    @AppStorage("hasStartedFirstScan") private var hasStartedFirstScan = false
 
     @State private var model = ScanModel()
-    @State private var route: AppRoute = .onboarding
+    @State private var route: AppRoute = ContentView.initialRoute
     @State private var scanTask: Task<Void, Never>?
     /// True once the user has come back to the app with FDA still off (needs a relaunch hint).
     @State private var showRelaunchHint = false
@@ -27,9 +29,20 @@ struct ContentView: View {
     /// Reclaimable below this after a scan → Empty screen.
     private let emptyThreshold: Int64 = 500_000_000 // ~0.5 GB
 
+    /// First launch starts on the welcome screen. (Anyone who already finished the old setup
+    /// has scanned before, so they skip it.)
+    private static var initialRoute: AppRoute {
+        let d = UserDefaults.standard
+        return d.bool(forKey: "hasStartedFirstScan") || d.bool(forKey: "hasSeenMonitoringSetup")
+            ? .onboarding : .welcome
+    }
+
     var body: some View {
         ZStack {
             switch route {
+            case .welcome:
+                WelcomeView(onStart: startFirstScan)
+                    .transition(.opacity)
             case .onboarding:
                 OnboardingView(showRelaunchHint: showRelaunchHint)
                     .transition(.opacity)
@@ -38,7 +51,7 @@ struct ContentView: View {
                     .transition(.opacity)
             case .main:
                 MainSplitView(model: model, onScanAgain: startScan,
-                              onTurnOnMonitoring: monitor.isEnabled ? nil : { showMonitoringSetup = true })
+                              onSetUpReminders: monitor.remindersEnabled ? nil : { showMonitoringSetup = true })
                     .transition(.opacity)
             case .empty:
                 EmptyStateView(lastScanned: model.lastScanned, onScanAgain: startScan)
@@ -52,16 +65,25 @@ struct ContentView: View {
         .background(WindowAccessor { window in
             guard observedWindow !== window else { return }
             observedWindow = window
+            if AppWindow.startHidden {
+                // Opened at login: stay in the menu bar. The next "Show App" opens a fresh window.
+                AppWindow.startHidden = false
+                window.close()
+                AppWindow.enterBackground()
+                return
+            }
             NSApp.setActivationPolicy(.regular)
             NotificationCenter.default.addObserver(
                 forName: NSWindow.willCloseNotification, object: window, queue: .main
             ) { _ in
-                if monitor.isEnabled { AppWindow.enterBackground() }
+                if monitor.isMonitoring { AppWindow.enterBackground() }
             }
         })
         // Dark-first, but follow the system appearance so light mode works too.
         .onAppear {
             AppWindow.opener = openWindow // let AppKit reopen this window later
+            // Opened at login: skip the full scan; the menu-bar monitor measures on its own.
+            guard !AppWindow.startHidden else { return }
             refresh(isReactivation: false)
         }
         .onChange(of: scenePhase) { _, phase in
@@ -92,8 +114,8 @@ struct ContentView: View {
             }
         }
         .onChange(of: route) { _, newRoute in
-            // First run: once results are in and monitoring is off, offer the (skippable) setup.
-            if newRoute == .main, !hasSeenMonitoringSetup, !monitor.isEnabled {
+            // First run: once the first scan is done, run the setup (reminders, then login item).
+            if newRoute == .main || newRoute == .empty, !hasSeenMonitoringSetup {
                 hasSeenMonitoringSetup = true
                 showMonitoringSetup = true
             }
@@ -107,6 +129,8 @@ struct ContentView: View {
 
     /// Re-evaluates Full Disk Access and routes accordingly. FDA is the source of truth.
     private func refresh(isReactivation: Bool) {
+        // The welcome screen waits for "Scan My Mac" (see startFirstScan).
+        if route == .welcome { return }
         FullDiskAccess.recheck()
 
         if FullDiskAccess.isGranted() {
@@ -126,9 +150,20 @@ struct ContentView: View {
 
     // MARK: - Flow
 
+    /// "Scan My Mac" on the welcome screen: scan now, or ask for Full Disk Access first.
+    private func startFirstScan() {
+        hasStartedFirstScan = true
+        FullDiskAccess.recheck()
+        if FullDiskAccess.isGranted() {
+            startScan()
+        } else {
+            withAnimation(Theme.Motion.cross) { route = .onboarding } // the gate auto-scans once granted
+        }
+    }
+
     private func startScan() {
         // Where Cancel should return us: Main if we already have results, else Onboarding.
-        let previous: AppRoute = model.categories.isEmpty ? .onboarding : .main
+        let previous: AppRoute = model.categories.isEmpty ? .welcome : .main
 
         scanTask?.cancel()
         withAnimation(Theme.Motion.cross) { route = .scanning }
