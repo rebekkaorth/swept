@@ -38,11 +38,16 @@ struct OnboardingView: View {
             steps
 
             if showRelaunchHint {
-                Text("Still not detected? Quit and reopen Swept.")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Theme.caution)
-                    .multilineTextAlignment(.center)
-                    .transition(.opacity)
+                VStack(spacing: 10) {
+                    Text("Switched it on, but Swept still can't see it? macOS sometimes needs Swept to restart first.")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Theme.caution)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 440)
+                    Button("Quit & Reopen Swept") { AppWindow.relaunch() }
+                        .controlSize(.large)
+                }
+                .transition(.opacity)
             }
 
             Text("Access is revocable anytime in System Settings › Privacy & Security › Full Disk Access. Swept only reads to show you sizes, and never sends anything anywhere.")
@@ -76,7 +81,7 @@ struct OnboardingView: View {
                 .keyboardShortcut(.defaultAction)
             }
             stepRow(2, "Turn on the switch next to Swept.")
-            stepRow(3, "If prompted, quit and reopen Swept.")
+            stepRow(3, "Come back to Swept. Your first scan starts by itself.")
         }
         .frame(maxWidth: 440, alignment: .leading)
     }

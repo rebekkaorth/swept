@@ -32,6 +32,22 @@ enum AppWindow {
         NSApp.activate()
     }
 
+    /// Starts a fresh copy of Swept and quits this one. macOS sometimes only applies a new
+    /// Full Disk Access permission to an app after it restarts.
+    @MainActor static func relaunch() {
+        let config = NSWorkspace.OpenConfiguration()
+        config.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: config) { _, error in
+            DispatchQueue.main.async {
+                if let error {
+                    NSLog("Swept: relaunch failed — \(error.localizedDescription)")
+                    return // stay open rather than quit with nothing coming back
+                }
+                NSApp.terminate(nil)
+            }
+        }
+    }
+
     /// Drop to background (no Dock icon). Only used while monitoring is on.
     @MainActor static func enterBackground() {
         NSApp.setActivationPolicy(.accessory)

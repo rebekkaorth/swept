@@ -82,8 +82,12 @@ xcrun stapler staple build/export/Swept.app
 ### 6. Make the DMG, notarize it too, attach the approval
 
 ```sh
-hdiutil create -volname "Swept" -srcfolder build/export/Swept.app \
-  -ov -format UDZO build/Swept.dmg
+# The DMG window shows Swept next to an Applications shortcut to drag it onto.
+mkdir -p build/dmg
+ditto build/export/Swept.app build/dmg/Swept.app
+ln -s /Applications build/dmg/Applications
+hdiutil create -volname "Swept" -srcfolder build/dmg -ov -format UDZO build/Swept.dmg
+codesign --sign "Developer ID Application" --timestamp build/Swept.dmg
 xcrun notarytool submit build/Swept.dmg --keychain-profile "AC_PROFILE" --wait
 xcrun stapler staple build/Swept.dmg
 ```
