@@ -96,14 +96,20 @@ in System Settings ▸ Privacy & Security ▸ Full Disk Access.
 
 A fresh clone builds and runs on your own Mac without an Apple Developer account. To sign with
 your own team, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and enter your
-Team ID (that file is git-ignored). Release builds (signing, notarization, DMG) are described
-in [BUILD.md](BUILD.md).
+Team ID (that file is git-ignored). How the official download is made (signing, notarization,
+DMG) is described in [RELEASING.md](RELEASING.md).
 
 ## Reporting problems
 
-Bugs and ideas: [open an issue](https://github.com/rebekkaorth/Swept/issues).
-If Swept deleted, or offered to delete, something it shouldn't, please report it privately:
-see [SECURITY.md](SECURITY.md).
+Found a bug, or have an idea? Please [open an issue](https://github.com/rebekkaorth/Swept/issues/new)
+and describe what happened, together with your macOS version and Swept version
+(Swept ▸ About Swept). This includes Swept deleting, or offering to delete, something it
+shouldn't.
+
+If you found a way another app or person could misuse Swept, for example to delete files
+outside its allowed folders, please don't post it publicly. Use
+[Report a vulnerability](https://github.com/rebekkaorth/Swept/security/advisories/new) instead,
+so it can be fixed before others learn about it.
 
 ## Privacy
 
