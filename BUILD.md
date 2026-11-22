@@ -1,4 +1,4 @@
-# Releasing Swept
+# Building & Releasing Swept
 
 How the official download is made. Swept is distributed through GitHub Releases as a
 **Developer ID–signed, notarized** DMG, so it opens on any Mac without warnings. It is not on

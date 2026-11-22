@@ -97,7 +97,7 @@ in System Settings ▸ Privacy & Security ▸ Full Disk Access.
 A fresh clone builds and runs on your own Mac without an Apple Developer account. To sign with
 your own team, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and enter your
 Team ID (that file is git-ignored). How the official download is made (signing, notarization,
-DMG) is described in [RELEASING.md](RELEASING.md).
+DMG) is described in [BUILD.md](BUILD.md).
 
 ## Reporting problems
 
