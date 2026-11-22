@@ -19,13 +19,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rebekkaorth/Swept/releases/latest">
+  <a href="https://github.com/rebekkaorth/Swept/releases/latest/download/Swept.dmg">
     <img src=".github/assets/download-button.svg" width="300" height="64" alt="Download Swept for macOS">
   </a>
 </p>
 
 <p align="center">
-  <sub>Version 1.0 · macOS 26 Tahoe or later · Apple silicon &amp; Intel · Free and open source</sub>
+  <sub>Version 1.0 · macOS 26 Tahoe or later · Apple silicon &amp; Intel · Free and open source · <a href="https://github.com/rebekkaorth/Swept/releases/latest">Release notes</a></sub>
 </p>
 
 ---
@@ -41,7 +41,7 @@
 
 ## Install
 
-1. [Download the latest version](https://github.com/rebekkaorth/Swept/releases/latest) (`Swept.dmg`).
+1. [Download the latest version](https://github.com/rebekkaorth/Swept/releases/latest/download/Swept.dmg) (`Swept.dmg`).
 2. Open the `.dmg` and drag **Swept** into **Applications**.
 3. Open Swept from Applications and press **Scan My Mac**.
 4. When asked, give Swept **Full Disk Access** in System Settings ▸ Privacy & Security.
