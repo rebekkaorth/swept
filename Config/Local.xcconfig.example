@@ -1,0 +1,5 @@
+// Copy this file to Config/Local.xcconfig (git-ignored) to sign with your own team.
+// Find your Team ID at https://developer.apple.com/account ▸ Membership details.
+
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
+CODE_SIGN_IDENTITY = Apple Development

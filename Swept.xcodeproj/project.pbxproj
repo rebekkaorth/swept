@@ -18,6 +18,7 @@
 
 /* Begin PBXFileReference section */
 		3CF807512FFD47A4002D40C4 /* Swept.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Swept.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3CF807902FFD70000000A001 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Signing.xcconfig; sourceTree = "<group>"; };
 		3CF8077B2FFD60000000A001 /* SweptTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SweptTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -55,6 +56,7 @@
 		3CF807482FFD47A4002D40C4 = {
 			isa = PBXGroup;
 			children = (
+				3CF807902FFD70000000A001 /* Signing.xcconfig */,
 				3CF807532FFD47A4002D40C4 /* Swept */,
 				3CF8077C2FFD60000000A001 /* SweptTests */,
 				3CF807522FFD47A4002D40C4 /* Products */,
@@ -210,6 +212,7 @@
 /* Begin XCBuildConfiguration section */
 		3CF8075C2FFD47A4002D40C4 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3CF807902FFD70000000A001 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -272,6 +275,7 @@
 		};
 		3CF8075D2FFD47A4002D40C4 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3CF807902FFD70000000A001 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;

@@ -11,3 +11,6 @@ xcuserdata/
 # Release artifacts
 *.dmg
 *.zip
+
+# Local signing (your Apple Team ID)
+Config/Local.xcconfig

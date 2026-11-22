@@ -1,21 +1,54 @@
-# Swept
+<p align="center">
+  <img src=".github/assets/icon.png" width="160" height="160" alt="Swept app icon">
+</p>
 
-A calm, honest disk cleaner for macOS. Swept shows you what's taking up space in caches,
-logs, leftovers from deleted apps, Xcode, the Trash and more, explains each item, and only
-cleans what you choose.
+<h1 align="center">Swept</h1>
 
-## Download
+<p align="center">
+  <b>A calm, honest disk cleaner for your Mac.</b><br>
+  Finds the caches, logs and leftovers hiding in forgotten corners, explains each one,<br>
+  and only cleans what you choose.
+</p>
 
-**[Download the latest version](https://github.com/rebekkaorth/Swept/releases/latest)**
+<p align="center">
+  <img src="https://img.shields.io/badge/macOS-26%20Tahoe%2B-6D28D9?style=flat-square&logo=apple&logoColor=white" alt="Requires macOS 26 Tahoe or later">
+  <img src="https://img.shields.io/badge/version-1.0-8B5CF6?style=flat-square" alt="Version 1.0">
+  <img src="https://img.shields.io/badge/Apple%20silicon%20%26%20Intel-universal-A78BFA?style=flat-square" alt="Universal: Apple silicon and Intel">
+  <img src="https://img.shields.io/badge/license-MIT-4B5563?style=flat-square" alt="MIT license">
+  <img src="https://img.shields.io/badge/network-none-16A34A?style=flat-square" alt="No network access">
+</p>
 
-1. Open the `.dmg` and drag **Swept** into **Applications**.
-2. Open Swept from Applications.
-3. When asked, give Swept **Full Disk Access** in System Settings ▸ Privacy & Security.
+<p align="center">
+  <a href="https://github.com/rebekkaorth/Swept/releases/latest">
+    <img src=".github/assets/download-button.svg" width="300" height="64" alt="Download Swept for macOS">
+  </a>
+</p>
+
+<p align="center">
+  <sub>Version 1.0 · macOS 26 Tahoe or later · Apple silicon &amp; Intel · Free and open source</sub>
+</p>
+
+---
+
+## Requirements
+
+| | |
+|---|---|
+| **macOS** | 26 Tahoe or later |
+| **Mac** | Apple silicon or Intel |
+| **Permission** | Full Disk Access (Swept shows you how to turn it on) |
+| **Internet** | Not needed. Swept never goes online. |
+
+## Install
+
+1. [Download the latest version](https://github.com/rebekkaorth/Swept/releases/latest) (`Swept.dmg`).
+2. Open the `.dmg` and drag **Swept** into **Applications**.
+3. Open Swept from Applications and press **Scan My Mac**.
+4. When asked, give Swept **Full Disk Access** in System Settings ▸ Privacy & Security.
    macOS needs this before any app can see other apps' caches.
+5. After the first scan, choose your reminders and whether Swept should open at login.
 
 Swept is signed with a Developer ID and notarized by Apple, so it opens without warnings.
-
-**Requirements:** macOS 26 (Tahoe) or later.
 
 ## What Swept looks at
 
@@ -23,8 +56,15 @@ Xcode & Simulators · App Caches · Leftovers from deleted apps · Developer Too
 Application Support · Logs · Saved App State · Trash · iOS Backups · Mail Attachments ·
 Time Machine Snapshots · Downloads
 
-It can also live in the menu bar, check your disk now and then, and remind you (at most once
-a day) when there's more to clean than a limit you set.
+## Reminders and the menu bar
+
+- **Menu bar icon:** see at a glance how much you could reclaim. You can hide it in Settings.
+- **Reminders:** set a limit, then pick how often (daily, every 3 days or weekly) and at what
+  time. While you're over your limit, Swept sends one calm notification. Snooze it for a week
+  any time.
+- **Open at login:** Swept can start quietly when you log in, so it keeps watching after a
+  restart. You can turn this on or off in Settings, or in System Settings ▸ General ▸ Login
+  Items & Extensions.
 
 ## What Swept never does
 
@@ -44,18 +84,20 @@ in System Settings ▸ Privacy & Security ▸ Full Disk Access.
 
 ## Uninstall
 
-Quit Swept (menu bar icon ▸ Quit), then drag it from Applications to the Trash. Its settings
-live in `~/Library/Preferences/com.rebekkaorth.Swept.plist`; you can delete that too.
+1. If Swept opens at login, switch off **Open at login** in Swept's Settings (⌘,).
+2. Quit Swept (menu bar icon ▸ Quit), then drag it from Applications to the Trash.
+3. Optional: delete its settings in `~/Library/Preferences/com.rebekkaorth.Swept.plist`.
 
 ## Build from source
 
 1. Install Xcode 26 or later.
 2. Clone the repo and open `Swept.xcodeproj`.
-3. Target **Swept** ▸ Signing & Capabilities: set **Team** to your own, or choose
-   **Sign to Run Locally**.
-4. Run (⌘R). Run the tests with ⌘U.
+3. Run (⌘R). Run the tests with ⌘U.
 
-Release builds (signing, notarization, DMG) are described in [BUILD.md](BUILD.md).
+A fresh clone builds and runs on your own Mac without an Apple Developer account. To sign with
+your own team, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and enter your
+Team ID (that file is git-ignored). Release builds (signing, notarization, DMG) are described
+in [BUILD.md](BUILD.md).
 
 ## Reporting problems
 

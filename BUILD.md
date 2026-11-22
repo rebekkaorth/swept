@@ -9,7 +9,7 @@ dependencies.
 ## 1. Prerequisites
 
 - Xcode 26+ on macOS 26+ (Tahoe).
-- Apple Developer Program membership (Team ID `YOUR_TEAM_ID`).
+- Apple Developer Program membership.
 - A **Developer ID Application** certificate in your login keychain
   (Xcode ▸ Settings ▸ Accounts ▸ Manage Certificates ▸ + ▸ *Developer ID Application*).
 - For notarization: your Apple ID + an **app-specific password**
@@ -23,7 +23,9 @@ dependencies.
 These live in `project.pbxproj` and must be set in Xcode's UI (Target **Swept**):
 
 **Signing & Capabilities**
-- Team: **YOUR_TEAM_ID**.
+- Team: set in `Config/Local.xcconfig` (git-ignored), **not** in this tab. Copy
+  `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and enter your Team ID. Setting the
+  team in Xcode would write it into the committed project file.
 - **Hardened Runtime: ON** (`ENABLE_HARDENED_RUNTIME = YES`, set).
 - **App Sandbox: OFF** (do *not* add the App Sandbox capability).
 - Code Signing Entitlements → `Swept/Swept.entitlements` (already in the repo; sets
@@ -118,6 +120,12 @@ hdiutil create -volname "Swept" -srcfolder "build/export/Swept.app" \
 xcrun stapler staple "build/Swept-1.0.dmg"   # staple the DMG too
 ```
 (Or use `create-dmg` for a Finder-styled window.)
+
+---
+
+**Publish:** GitHub ▸ Releases ▸ *Draft a new release* ▸ tag `vX.Y` ▸ attach the DMG.
+The README's download button links to the latest release. When the version changes, update
+the version badge and the "Version X.Y" line under the button in `README.md`.
 
 ---
 

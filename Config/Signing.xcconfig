@@ -1,0 +1,14 @@
+// Signing settings for all targets.
+//
+// The repo ships WITHOUT a development team, so a fresh clone builds and runs on your own Mac
+// with ad-hoc signing ("Sign to Run Locally"). To sign with your own Apple Developer team
+// (needed for Developer ID releases), copy Local.xcconfig.example to Local.xcconfig in this
+// folder and fill in your Team ID. Local.xcconfig is git-ignored.
+//
+// Don't set the team in Xcode's Signing & Capabilities tab: Xcode would write it into the
+// project file, which is committed.
+
+DEVELOPMENT_TEAM =
+CODE_SIGN_IDENTITY = -
+
+#include? "Local.xcconfig"
